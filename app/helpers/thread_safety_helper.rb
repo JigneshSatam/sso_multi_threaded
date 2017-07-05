@@ -1,0 +1,2 @@
+module ThreadSafetyHelper
+end

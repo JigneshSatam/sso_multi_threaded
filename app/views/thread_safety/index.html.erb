@@ -1,0 +1,19 @@
+<button id="simple_request">Simple Request</button>
+&nbsp;
+<button id="infinite_request">Infinite Request</button>
+
+<script type="text/javascript">
+    $("#simple_request").click(function() {
+        $.get("/thread_safety/simple", function(data) {
+            // alert(data)
+            console.log(data);
+        });
+    });
+
+    $("#infinite_request").click(function() {
+        $.get("/thread_safety/infinite", function(data) {
+            // alert(data);
+            console.log(data);
+        });
+    });
+</script>
