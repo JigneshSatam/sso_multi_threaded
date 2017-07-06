@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  get 'users/new'
+
+  root "thread_safety#index"
+
   get "/thread_safety/index"
 
   get "/thread_safety/simple"

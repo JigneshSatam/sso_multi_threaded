@@ -15,14 +15,14 @@ class ThreadSafetyController < ApplicationController
     @instance_variable_at_method_level += 1
 
     puts "IN SIMPLE method #{Time.now}"
-    # sleep(1)
+    sleep(3)
     # render :text => "gloabal_variable ==> #{$gloabal_variable}\n"
-    # render :text => "class_variable ==> #{@@class_variable}\n"
+    render :text => "class_variable ==> #{@@class_variable}\n"
     # render :text => "instance_variable_at_class_level ==> #{@instance_variable_at_class_level}\n"
     # render :text => "instance_variable_at_method_level ==> #{@instance_variable_at_method_level}\n"
     # render :text => "class_variable ==> #{@@class_variable} || instance_variable_at_class_level ==> #{@instance_variable_at_class_level} || instance_variable_at_method_level ==> #{@instance_variable_at_method_level}"
 
-    render :text => "Welcaome to simple method\n"
+    # render :text => "Welcaome to simple method\n"
   end
 
   def infinite
