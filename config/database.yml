@@ -6,8 +6,8 @@
 #
 default: &default
   adapter:  postgresql
-  pool: 15
-  timeout: 30000000
+  pool: 5
+  timeout: 5000
   checkout_timeout: 30
 
 development:
