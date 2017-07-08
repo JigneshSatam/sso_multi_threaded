@@ -1,4 +1,5 @@
 Rails.application.configure do
+  ENV["EXPIRE_AFTER_SECONDS"] = 600
   ENV["RAILS_MAX_THREADS"] = "15"
   # Settings specified here will take precedence over those in config/application.rb.
 

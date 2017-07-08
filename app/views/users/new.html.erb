@@ -1,2 +1,58 @@
-<h1>Users#new</h1>
-<p>Find me in app/views/users/new.html.erb</p>
+<div class="container">
+  <%= form_for @user , html: {class: "signUp"} do |f| %>
+    <h3>Create Your Account</h3>
+    <p>Just enter your email address</br>
+and your password for join.
+    </p>
+
+    <!-- # <%= f.label :name %> -->
+    <%= f.text_field :name, class: "w100", placeholder: "Name" %>
+    <!-- <input class="w100" type="email" placeholder="Insert eMail" reqired autocomplete='off' /> -->
+
+    <!-- # <%= f.label :email %> -->
+    <%= f.email_field :email, class: "w100", placeholder: "Email", reqired: true,  autocomplete: 'off'%>
+    <!-- # <%= f.email_field :email %> -->
+
+    <!-- # <%= f.label :password %> -->
+    <%= f.password_field :password, placeholder: "Password", reqired: true %>
+    <!-- <input type="password" placeholder="Insert Password" reqired /> -->
+
+    <!-- # <%= f.label :password_confirmation, "Confirmation" %> -->
+    <%= f.password_field :password_confirmation, placeholder: "Verify Password", reqired: true %>
+    <!-- <input type="password" placeholder="Verify Password" reqired /> -->
+
+    <button class="form-btn sx log-in" type="button">Log In</button>
+    <!-- <button class="form-btn dx" type="submit">Sign Up</button> -->
+    <%= f.button "Sign Up", type: "submit",  class: "form-btn dx" %>
+  <% end %>
+ <!--  <form class="signUp">
+  </form> -->
+  <%= form_for(:session, url: login_path, html: {class: "signIn"}) do |f| %>
+    <h3>Welcome</br>Back !</h3>
+    <!-- # <%= f.label :email %> -->
+    <%= f.email_field :email, placeholder: "Email", autocomplete: 'off', reqired: true %>
+    <!-- <input type="email" placeholder="Insert eMail" autocomplete='off' reqired /> -->
+
+    <!-- # <%= f.label :password %> -->
+    <%= f.password_field :password, placeholder: "Password", reqired: true %>
+    <!-- <input type="password" placeholder="Insert Password" reqired /> -->
+
+    <%= f.check_box :remember_me, class: "remember_me" %>
+    <%= f.label :remember_me, class: "checkbox inline" do %>
+      <span>Remember me on this computer</span>
+    <% end %>
+    <!-- <div>
+    </div> -->
+
+    <%= f.hidden_field :redirect_to, value: params[:app] %>
+
+    <button class="form-btn sx back" type="button">Sign Up</button>
+    <!-- <button class="form-btn dx" type="submit">Log In</button> -->
+    <%= f.button "Log in", type: "submit", class: "form-btn dx" %>
+
+  <% end %>
+  <!-- <form class="signIn">
+    <button class="fb" type="button">Log In With Facebook</button>
+    <p>- or -</p>
+  </form> -->
+</div>
