@@ -40,7 +40,7 @@ module SessionsHelper
   end
 
   def jwt_token(user)
-    exp = Time.now.to_i + (ENV["EXPIRE_AFTER_SECONDS"] || 1.hour)
+    exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
     payload = { :data => {email: user.email}, :exp => exp }
     hmac_secret = 'my$ecretK3y'
     JWT.encode payload, hmac_secret, 'HS256'
