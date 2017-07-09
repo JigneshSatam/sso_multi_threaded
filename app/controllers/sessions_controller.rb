@@ -16,7 +16,7 @@ class SessionsController < ApplicationController
       # debugger
     else
       flash[:danger] = 'Invalid email/password combination'
-      redirect :back
+      redirect_to :back
     end
   end
 
