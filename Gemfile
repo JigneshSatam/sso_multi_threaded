@@ -58,3 +58,5 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 # JSON Web Token
 gem 'jwt'
+
+gem 'scout_apm'
