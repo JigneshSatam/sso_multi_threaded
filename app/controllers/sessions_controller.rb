@@ -1,5 +1,13 @@
 class SessionsController < ApplicationController
   def create
+    if logged_in?
+      if params[:session][:redirect_to].present?
+        app_url =  params[:session][:redirect_to] + "/dashboard"
+        redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
+      else
+        redirect_to current_user
+      end
+    end
     user = User.find_by(email: params[:session][:email].downcase)
     if user && user.authenticate(params[:session][:password])
       log_in(user)
