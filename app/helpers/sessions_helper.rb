@@ -13,9 +13,70 @@ module SessionsHelper
   def current_user
     return @current_user if !@current_user.nil?
     if (user_id = session[:user_id])
-      @current_user ||= User.find_by(id: user_id)
+      begin
+        # main_thread_conn = ActiveRecord::Base.connection_pool.checkout
+        # main_thread_conn.raw_connection
+        # puts "@@@@@@@@@@   Active connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.connections.size} @@@@@@@@@@@@@@@@"
+        # puts "@@@@@@@@@@   Waiting connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.num_waiting_in_queue} @@@@@@@@@@@@@@@@"
+        # sleep(20)
+        # @current_user ||= User.find_by(id: user_id)
+        # puts "@@@@@@@@@@ CURRENT_USER before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        # ActiveRecord::Base.connection_pool.with_connection do
+        # #   puts "@@@@@@@@@@   Thread is sleeping CURRENT_USER @@@@@@@@@@@@@@@@"
+        # #   puts "@@@@@@@@@@   Active connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.connections.size} @@@@@@@@@@@@@@@@"
+        #   # puts "@@@@@@@@@@   Waiting connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.num_waiting_in_queue} @@@@@@@@@@@@@@@@"
+        #   puts "@@@@@@@@@@ CURRENT_USER middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        #   sleep(20)
+        #   @current_user ||= User.find_by(id: user_id)
+        # end
+        # puts "@@@@@@@@@@ CURRENT_USER after ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+
+        logger.debug "@@@@@@@@@@ CURRENT_USER before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        @current_user ||= User.find_by(id: user_id)
+        logger.debug "@@@@@@@@@@ CURRENT_USER middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        # sleep(20)
+        # ts = Thread.new do
+        #   puts "@@@@@@@@@@ CURRENT_USER before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        #   @current_user ||= User.find_by(id: user_id)
+        #   puts "@@@@@@@@@@ CURRENT_USER middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        #   sleep(20)
+        #   # User.connection_pool.with_connection do
+        #   # end
+        #   User.connection.close
+        #   puts "@@@@@@@@@@ CURRENT_USER after ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        # end
+        # ts.join
+      rescue Exception => e
+        logger.debug "@@@@@@@@@@ Thread is sleeping RESCUE #{e} @@@@@@@@@@@@@@@@"
+        # ActiveRecord::Base.connection_pool.disconnect!
+        # ActiveRecord::Base.connection_pool.clear_reloadable_connections!
+        # ActiveRecord::Base.clear_active_connections!
+        ActiveRecord::Base.connection.close
+        retry
+      ensure
+        logger.debug "@@@@@@@@@@ Thread in CURRENT_USER ENSURE @@@@@@@@@@@@@@@@"
+        User.connection.close
+        logger.debug "@@@@@@@@@@ CURRENT_USER ENSURE ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+        # ActiveRecord::Base.connection_pool.release_connection
+        # ActiveRecord::Base.connection_pool.checkin(main_thread_conn)
+        # ActiveRecord::Base.connection_pool.disconnect!
+        # puts "@@@@@@@@@@   Active connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.connections.size} @@@@@@@@@@@@@@@@"
+        # puts "@@@@@@@@@@   Waiting connections CURRENT_USER ==> #{ActiveRecord::Base.connection_pool.num_waiting_in_queue} @@@@@@@@@@@@@@@@"
+        # ActiveRecord::Base.connection_pool.clear_reloadable_connections!
+        # ActiveRecord::Base.clear_active_connections!
+        # ActiveRecord::Base.connection.close
+      end
     elsif(user_id = cookies.signed[:user_id])
-      user = User.find_by(id: user_id)
+      begin
+        user = User.find_by(id: user_id)
+      rescue Exception => e
+        logger.debug "@@@@@@@@@@ Thread is sleeping RESCUE #{e} @@@@@@@@@@@@@@@@"
+      ensure
+        logger.debug "@@@@@@@@@@ Thread in CURRENT_USER ENSURE @@@@@@@@@@@@@@@@"
+        # User.connection_pool.release_connection
+        User.connection.close
+        logger.debug "@@@@@@@@@@ CURRENT_USER ENSURE ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
+      end
       if user && user.authenticated?(cookies[:remember_token])
         log_in user
         @current_user = user

@@ -1,6 +1,7 @@
 Rails.application.configure do
   ENV["EXPIRE_AFTER_SECONDS"] = "600"
   ENV["RAILS_MAX_THREADS"] = "15"
+  # ENV["POOL"] = "20"
   # Settings specified here will take precedence over those in config/application.rb.
 
   # In the development environment your application's code is reloaded on
@@ -37,7 +38,7 @@ Rails.application.configure do
   config.active_support.deprecation = :log
 
   # Raise an error on page load if there are pending migrations.
-  config.active_record.migration_error = false
+  # config.active_record.migration_error = false
   # config.active_record.migration_error = :page_load
 
   # Debug mode disables concatenation and preprocessing of assets.

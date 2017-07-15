@@ -44,7 +44,11 @@ Rails.application.configure do
 
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
-  config.log_level = :debug
+  if ENV["DEBUG_LOGS"].present?
+    config.log_level = :debug
+  else
+    config.log_level = :info
+  end
 
   # Prepend all log lines with the following tags.
   config.log_tags = [ :request_id ]
