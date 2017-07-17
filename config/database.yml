@@ -28,3 +28,6 @@ test:
   database: sso_thread_test
   username: baldor
   password: baldor123
+
+production:
+  <<: *default
