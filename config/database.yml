@@ -6,7 +6,7 @@
 #
 default: &default
   adapter:  postgresql
-  pool: <%= ENV.fetch("POOL") { 5 }.to_i %>
+  pool: <%= ENV.fetch("POOL") { 20 }.to_i %>
   timeout: <%= ENV.fetch("TIMEOUT") { 5 }.to_i %>
   checkout_timeout: <%= ENV.fetch("CHECKOUT_TIMEOUT") { 5 }.to_i %>
 
