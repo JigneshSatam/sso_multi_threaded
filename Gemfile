@@ -60,4 +60,8 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 # JSON Web Token
 gem 'jwt'
 
+# scout ==> for monitoring
 gem 'scout_apm'
+
+# Redis ==> for caching and session store
+gem 'redis-rails'
