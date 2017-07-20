@@ -1,10 +1,10 @@
 class UsersController < ApplicationController
   before_action :check_login, only: [:new]
-
+  before_action :authenticate, only: [:show]
   def show
     begin
       logger.debug "@@@@@@@@@@ SHOW before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
-      @user = User.find(params[:id])
+      @user = current_user
       logger.debug "@@@@@@@@@@ SHOW middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
     rescue Exception => e
     ensure
@@ -92,5 +92,9 @@ class UsersController < ApplicationController
           redirect_to current_user and return
         end
       end
+    end
+
+    def authenticate
+      return redirect_to root_url if current_user.blank?
     end
 end

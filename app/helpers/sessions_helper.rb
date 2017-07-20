@@ -82,6 +82,7 @@ module SessionsHelper
         @current_user = user
       end
     end
+    return @current_user
   end
 
   def forget(user)
