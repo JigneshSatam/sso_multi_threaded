@@ -7,7 +7,7 @@
       </h1>
     </section>
     <% if logged_in? %>
-      <%= link_to "Log out", logout_path, method: :delete %>
+      <%= link_to "Log out", logout_authentications_path, method: :delete %>
     <% end %>
   </aside>
 </div>

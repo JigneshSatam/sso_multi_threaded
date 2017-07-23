@@ -1,6 +1,5 @@
 class UsersController < ApplicationController
-  before_action :check_login, only: [:new]
-  before_action :authenticate, only: [:show]
+  before_action :authenticate_or_redirect_to_login, except: [:new]
   def show
     begin
       logger.debug "@@@@@@@@@@ SHOW before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
@@ -45,8 +44,8 @@ class UsersController < ApplicationController
 
   def new
     if logged_in?
-      if params[:session][:redirect_to].present?
-        app_url =  params[:session][:redirect_to] + "/dashboard"
+      if (app_url = (params[:session] && params[:session][:redirect_to]) || params[:app]).present?
+        # app_url =  params[:session][:redirect_to]
         redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
       else
         redirect_to current_user
@@ -92,9 +91,5 @@ class UsersController < ApplicationController
           redirect_to current_user and return
         end
       end
-    end
-
-    def authenticate
-      return redirect_to root_url if current_user.blank?
     end
 end

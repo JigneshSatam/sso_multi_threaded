@@ -1,14 +1,6 @@
-class SessionsController < ApplicationController
-  def create
+class AuthenticationsController < ApplicationController
+  def login
     # debugger
-    if logged_in?
-      if params[:session][:redirect_to].present?
-        app_url =  params[:session][:redirect_to] + "/dashboard"
-        redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
-      else
-        redirect_to current_user
-      end
-    end
     user = nil
     begin
       # puts "sessions controller | create method | BEGIN"
@@ -72,7 +64,7 @@ class SessionsController < ApplicationController
       log_in(user)
       params[:session][:remember_me] == '1' ? remember(user) : forget(user)
       if params[:session][:redirect_to].present?
-        app_url =  params[:session][:redirect_to] + "/dashboard"
+        app_url =  params[:session][:redirect_to]
         respond_to do |format|
          format.html { redirect_to generate_url(app_url, {token: jwt_token(user)}), status: 303}
          format.json { nil }
@@ -93,15 +85,12 @@ class SessionsController < ApplicationController
     end
   end
 
-  def destroy
+  def logout
     # debugger
     logger.debug "#{'$'*10} destroy started #{'$'*10}"
     # sleep(10)
     log_out if logged_in?
     logger.debug "#{'$'*10} destroy ended #{'$'*10}"
     redirect_to root_url
-  end
-
-  def new
   end
 end

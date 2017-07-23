@@ -27,7 +27,7 @@ and your password for join.
   <% end %>
  <!--  <form class="signUp">
   </form> -->
-  <%= form_for(:session, url: login_path, html: {class: "signIn"}) do |f| %>
+  <%= form_for(:session, url: login_authentications_path, html: {class: "signIn"}) do |f| %>
     <h3>Welcome</br>Back !</h3>
     <!-- # <%= f.label :email %> -->
     <%= f.email_field :email, placeholder: "Email", autocomplete: 'off', reqired: true %>

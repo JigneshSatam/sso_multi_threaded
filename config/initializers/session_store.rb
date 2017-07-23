@@ -3,9 +3,9 @@
 # Rails.application.config.session_store :cookie_store, key: '_sso_session', expire_after: ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
 
 if Rails.env == "development"
-  Rails.application.config.session_store :redis_store, servers: ["redis://localhost:6379/0/session"]
+  Rails.application.config.session_store :redis_store, servers: ["redis://localhost:6379/0/session"], key: '_sso_session'
 else
-  Rails.application.config.session_store :redis_store, servers: [ENV["REDISCLOUD_URL"]]
+  Rails.application.config.session_store :redis_store, servers: [ENV["REDISCLOUD_URL"]], key: '_sso_session'
 end
 
 # :redis_store, {

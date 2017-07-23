@@ -11,3 +11,24 @@ for i in {1..10}; do (curl -H "Accept: application/json" -H "Content-Type: appli
 
 
 for i in {1..10}; do (curl "http://localhost:3000/thread_safety/simple" &); done
+
+
+
+User.transaction do
+  user = User.find(9)
+  user.lock!
+  user.first_name = "Agent1"
+  sleep(20)
+  user.save!
+end
+
+user = User.find(9)
+user.update(first_name: "Agent2")
+
+User.transaction do
+  user = User.find(9)
+  user.lock!
+  user.first_name = "Agent2"
+  # sleep(10)
+  user.save!
+end

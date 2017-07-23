@@ -1,9 +1,10 @@
 Rails.application.routes.draw do
-  get 'sessions/new'
-
-  get 'sessions/create'
-
-  get 'sessions/destroy'
+  resources :authentications do
+    collection do
+      post 'login'
+      delete 'logout'
+    end
+  end
 
   root "users#new"
 
@@ -12,12 +13,6 @@ Rails.application.routes.draw do
   get "/thread_safety/simple"
 
   get "/thread_safety/infinite"
-
-  get "/login" => "sessions#new"
-
-  post "/login" => "sessions#create"
-
-  delete "/logout" => "sessions#destroy"
 
   resources :users
 
