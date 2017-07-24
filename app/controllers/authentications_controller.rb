@@ -64,9 +64,9 @@ class AuthenticationsController < ApplicationController
       log_in(user)
       params[:session][:remember_me] == '1' ? remember(user) : forget(user)
       if params[:session][:redirect_to].present?
-        app_url =  params[:session][:redirect_to]
+        service_url =  params[:session][:redirect_to]
         respond_to do |format|
-         format.html { redirect_to generate_url(app_url, {token: jwt_token(user)}), status: 303}
+         format.html { redirect_to_service_provider(service_url, user) }
          format.json { nil }
         end
       else

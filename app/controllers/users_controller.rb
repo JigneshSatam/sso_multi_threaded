@@ -44,9 +44,10 @@ class UsersController < ApplicationController
 
   def new
     if logged_in?
-      if (app_url = (params[:session] && params[:session][:redirect_to]) || params[:app]).present?
+      if (service_url = (params[:session] && params[:session][:redirect_to]) || params[:service_url]).present?
         # app_url =  params[:session][:redirect_to]
-        redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
+        redirect_to_service_provider(service_url, current_user)
+        # redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
       else
         redirect_to current_user
       end

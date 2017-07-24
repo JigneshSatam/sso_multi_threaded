@@ -102,8 +102,29 @@ module AuthenticationsHelper
 
     def log_out
       forget(current_user)
+      logout_service_providers(current_user.id)
       session.delete(:user_id)
       @current_user = nil
+    end
+
+    def logout_service_providers(user_id)
+      ServiceTicket.where(user_id: user_id).each do |service_ticket|
+        make_logout_request(service_ticket.token)
+        # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
+        service_ticket.destroy
+      end
+    end
+
+    def make_logout_request(token, url = nil)
+      require 'net/http'
+      url = URI.parse('http://localhost:5000/authentications/logout')
+      params = { :token => token }
+      url.query = URI.encode_www_form(params)
+      req = Net::HTTP::Get.new(url.to_s)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+      puts res.body
     end
 
     def jwt_token(user)
@@ -119,8 +140,22 @@ module AuthenticationsHelper
       uri.to_s
     end
 
-    def authenticate_or_redirect_to_login
-      redirect_to root_url unless logged_in?
+    def authenticate_or_redirect_to_login(service_url = nil)
+      service_url ||= params[:service_url]
+      unless logged_in?
+        redirect_to root_url
+        return
+      end
+      if service_url.present?
+        redirect_to_service_provider(service_url, current_user)
+        return
+      end
+    end
+
+    def redirect_to_service_provider(service_url, user)
+      token = jwt_token(user)
+      redirect_to generate_url(service_url, {token: token}), status: 303
+      ServiceTicket.create(user_id: user.id, url: service_url, token: token)
     end
   end
 
@@ -132,5 +167,5 @@ end
 
 class ApplicationController < ActionController::Base
   include AuthenticationsHelper
-  before_action :authenticate_or_redirect_to_login, except: [:login, :logout]
+  before_action :authenticate_or_redirect_to_login, except: [:login]
 end

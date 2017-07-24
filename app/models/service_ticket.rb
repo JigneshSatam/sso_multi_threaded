@@ -1,0 +1,2 @@
+class ServiceTicket < ApplicationRecord
+end
