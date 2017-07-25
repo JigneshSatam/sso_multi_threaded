@@ -122,10 +122,11 @@ module AuthenticationsHelper
       logout_url = URI.parse(base_url_string + "/authentications/logout")
       params = { :token => token }
       logout_url.query = URI.encode_www_form(params)
-      req = Net::HTTP::Get.new(logout_url.to_s)
-      res = Net::HTTP.start(logout_url.host, logout_url.port) {|http|
-        http.request(req)
-      }
+      res = Net::HTTP.get_response(logout_url)
+      # req = Net::HTTP::Get.new(logout_url.to_s)
+      # res = Net::HTTP.start(logout_url.host, logout_url.port) {|http|
+      #   http.request(req)
+      # }
       puts res.body
     end
 
