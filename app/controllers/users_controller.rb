@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :authenticate_or_redirect_to_login, except: [:new]
+  # before_action :authenticate_or_redirect_to_login, except: [:new]
   def show
     begin
       logger.debug "@@@@@@@@@@ SHOW before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
@@ -43,16 +43,11 @@ class UsersController < ApplicationController
   end
 
   def new
-    if logged_in?
-      if (service_url = (params[:session] && params[:session][:redirect_to]) || params[:service_url]).present?
-        # app_url =  params[:session][:redirect_to]
-        redirect_to_service_provider(service_url, current_user)
-        # redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303
-      else
-        redirect_to current_user
-      end
+    if current_user
+      redirect_to current_user
+    else
+      @user = User.new
     end
-    @user = User.new
   end
 
   def create

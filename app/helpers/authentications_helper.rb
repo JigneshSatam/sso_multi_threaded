@@ -127,11 +127,25 @@ module AuthenticationsHelper
       puts res.body
     end
 
-    def jwt_token(user)
-      exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
-      payload = { :data => {email: user.email}, :exp => exp }
+    def encode_jwt_token(data_hash)
+      # exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
+      # payload = { :data => data_hash, :exp => exp }
+      payload = { :data => data_hash }
       hmac_secret = 'my$ecretK3y'
       JWT.encode payload, hmac_secret, 'HS256'
+    end
+
+    def decode_jwt_token(token)
+      hmac_secret = Rails.configuration.sso_settings["identity_provider_secret_key"]
+      begin
+        decoded_token = JWT.decode token, hmac_secret, true, { :algorithm => 'HS256' }
+        payload = decoded_token.select{|decoded_part| decoded_part.key?("data") }.last
+        return payload
+      rescue JWT::ExpiredSignature
+        # Handle expired token, e.g. logout user or deny access
+        puts "Token expired thus redirecting to root_url"
+        redirect_to root_url and return
+      end
     end
 
     def generate_url(url, params = {})
@@ -141,21 +155,31 @@ module AuthenticationsHelper
     end
 
     def authenticate_or_redirect_to_login(service_url = nil)
-      service_url ||= params[:service_url]
-      unless logged_in?
-        redirect_to root_url
-        return
-      end
-      if service_url.present?
-        redirect_to_service_provider(service_url, current_user)
+      # service_url ||= params[:service_url]
+      if logged_in?
+        if params[:token].present? && (service_url = get_service_url(params[:token])).present?
+          redirect_to_service_provider(service_url, current_user)
+          return
+        end
+      else
+        after_logout_path
         return
       end
     end
 
+    def get_service_url(jwt_token)
+      payload = decode_jwt_token(params[:token])
+      payload.present? ? payload["data"]["service_url"] : nil
+    end
+
     def redirect_to_service_provider(service_url, user)
-      token = jwt_token(user)
-      redirect_to generate_url(service_url, {token: token}), status: 303
+      if (service_ticket = ServiceTicket.where(user_id: user.id).last)
+        token = service_ticket.token
+      else
+        token = encode_jwt_token({email: user.email})
+      end
       ServiceTicket.create(user_id: user.id, url: service_url, token: token)
+      redirect_to generate_url(service_url, {token: token}), status: 303
     end
   end
 

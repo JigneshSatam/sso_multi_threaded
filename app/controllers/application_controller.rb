@@ -5,4 +5,12 @@ class ApplicationController < ActionController::Base
   def disconnect_db
     ActiveRecord::Base.connection_pool.disconnect!
   end
+
+  def after_login_path
+    redirect_to current_user
+  end
+
+  def after_logout_path
+
+  end
 end
