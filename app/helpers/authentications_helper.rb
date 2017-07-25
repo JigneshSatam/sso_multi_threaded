@@ -109,19 +109,21 @@ module AuthenticationsHelper
 
     def logout_service_providers(user_id)
       ServiceTicket.where(user_id: user_id).each do |service_ticket|
-        make_logout_request(service_ticket.token)
+        make_logout_request(service_ticket.url, service_ticket.token)
         # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
         service_ticket.destroy
       end
     end
 
-    def make_logout_request(token, url = nil)
+    def make_logout_request(url_string, token)
       require 'net/http'
-      url = URI.parse('http://localhost:5000/authentications/logout')
+      url = URI.parse(url_string)
+      base_url_string = url_string.split(url.request_uri).first
+      logout_url = URI.parse(base_url_string + "/authentications/logout")
       params = { :token => token }
-      url.query = URI.encode_www_form(params)
-      req = Net::HTTP::Get.new(url.to_s)
-      res = Net::HTTP.start(url.host, url.port) {|http|
+      logout_url.query = URI.encode_www_form(params)
+      req = Net::HTTP::Get.new(logout_url.to_s)
+      res = Net::HTTP.start(logout_url.host, logout_url.port) {|http|
         http.request(req)
       }
       puts res.body
