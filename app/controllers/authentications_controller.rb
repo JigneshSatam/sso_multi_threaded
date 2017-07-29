@@ -63,8 +63,7 @@ class AuthenticationsController < ApplicationController
     if user && user.authenticate(params[:session][:password])
       log_in(user)
       params[:session][:remember_me] == '1' ? remember(user) : forget(user)
-      if params[:token].present?
-        service_url = get_service_url(params[:token])
+      if (service_url = get_service_url).present?
         respond_to do |format|
          format.html { redirect_to_service_provider(service_url, user) }
          format.json { nil }

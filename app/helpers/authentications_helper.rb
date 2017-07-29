@@ -157,21 +157,28 @@ module AuthenticationsHelper
       uri.to_s
     end
 
-    def authenticate_or_redirect_to_login(service_url = nil)
-      # service_url ||= params[:service_url]
+    def authenticate_or_redirect_to_login
       if logged_in?
-        if params[:token].present? && (service_url = get_service_url(params[:token])).present?
-          redirect_to_service_provider(service_url, current_user)
-          return
+        if (service_url = get_service_url).present?
+          clear_session_service_token
+          redirect_to_service_provider(service_url, current_user) and return
+        else
+          return nil
         end
       else
+        # redirect_to after_logout_path and return
         after_logout_path
         return
       end
     end
 
-    def get_service_url(jwt_token)
-      payload = decode_jwt_token(params[:token])
+    def get_service_token
+      return (params[:service_token] || session[:service_token])
+    end
+
+    def get_service_url
+      service_token = get_service_token
+      payload = decode_jwt_token(service_token)
       payload.present? ? payload["data"]["service_url"] : nil
     end
 
@@ -182,7 +189,15 @@ module AuthenticationsHelper
         token = encode_jwt_token({email: user.email})
       end
       ServiceTicket.create(user_id: user.id, url: service_url, token: token)
-      redirect_to generate_url(service_url, {token: token}), status: 303
+      redirect_to(generate_url(service_url, {token: token}), status: 303) and return
+    end
+
+    def set_session_service_token
+      session[:service_token] = params[:service_token] if params[:service_token]
+    end
+
+    def clear_session_service_token
+      session[:service_token] = nil
     end
   end
 
@@ -190,9 +205,11 @@ module AuthenticationsHelper
     receiver.extend         ClassMethods
     receiver.send :include, InstanceMethods
   end
+
 end
 
 class ApplicationController < ActionController::Base
   include AuthenticationsHelper
+  before_action :set_session_service_token
   before_action :authenticate_or_redirect_to_login, except: [:login]
 end
