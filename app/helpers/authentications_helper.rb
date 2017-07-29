@@ -160,7 +160,6 @@ module AuthenticationsHelper
     def authenticate_or_redirect_to_login
       if logged_in?
         if (service_url = get_service_url).present?
-          clear_session_service_token
           redirect_to_service_provider(service_url, current_user) and return
         else
           return nil
@@ -178,6 +177,7 @@ module AuthenticationsHelper
 
     def get_service_url
       service_token = get_service_token
+      return nil if service_token.blank?
       payload = decode_jwt_token(service_token)
       payload.present? ? payload["data"]["service_url"] : nil
     end
@@ -189,6 +189,7 @@ module AuthenticationsHelper
         token = encode_jwt_token({email: user.email})
       end
       ServiceTicket.create(user_id: user.id, url: service_url, token: token)
+      clear_session_service_token
       redirect_to(generate_url(service_url, {token: token}), status: 303) and return
     end
 
