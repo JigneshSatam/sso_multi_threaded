@@ -131,8 +131,8 @@ module AuthenticationsHelper
     end
 
     def encode_jwt_token(data_hash)
-      # exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
-      # payload = { :data => data_hash, :exp => exp }
+      exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
+      payload = { :data => data_hash, :exp => exp }
       payload = { :data => data_hash }
       hmac_secret = 'my$ecretK3y'
       JWT.encode payload, hmac_secret, 'HS256'
@@ -183,11 +183,7 @@ module AuthenticationsHelper
     end
 
     def redirect_to_service_provider(service_url, user)
-      if (service_ticket = ServiceTicket.where(user_id: user.id).last)
-        token = service_ticket.token
-      else
-        token = encode_jwt_token({email: user.email})
-      end
+      token = encode_jwt_token({email: user.email})
       ServiceTicket.create(user_id: user.id, url: service_url, token: token)
       clear_session_service_token
       redirect_to(generate_url(service_url, {token: token}), status: 303) and return
