@@ -190,7 +190,32 @@ module AuthenticationsHelper
     end
 
     def set_session_service_token
-      session[:service_token] = params[:service_token] if params[:service_token]
+      path_key = nil
+      if params[:service_token].present?
+        token = params[:service_token]
+      elsif request.referer && (url = URI.parse(request.referer))
+        path_key = (url.to_s.split(url.request_uri).last)
+        path_key.chomp!("/")
+        if session[path_key].present?
+          token = session[path_key]
+          session[path_key] = nil # Remove old session key
+        end
+      end
+      if token.present?
+        if logged_in?
+          session[:service_token] = token
+          response.location = get_service_url
+          response.status = 303
+          session[path_key] = nil if path_key.present?
+          session[:service_token] = nil
+          return
+        end
+        if response.location.blank?
+          path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
+          path_key.chomp!("/")
+        end
+        session[path_key] = token # Set new session key
+      end
     end
 
     def clear_session_service_token
@@ -207,6 +232,6 @@ end
 
 class ApplicationController < ActionController::Base
   include AuthenticationsHelper
-  before_action :set_session_service_token
+  after_action :set_session_service_token
   before_action :authenticate_or_redirect_to_login, except: [:login]
 end

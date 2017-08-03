@@ -1,6 +1,5 @@
 class AuthenticationsController < ApplicationController
   def login
-    # debugger
     user = nil
     begin
       # puts "sessions controller | create method | BEGIN"
