@@ -166,7 +166,7 @@ module AuthenticationsHelper
         end
       else
         # redirect_to after_logout_path and return
-        after_logout_path
+        # after_logout_path
         return
       end
     end
