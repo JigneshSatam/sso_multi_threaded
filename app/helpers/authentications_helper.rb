@@ -158,6 +158,7 @@ module AuthenticationsHelper
     end
 
     def authenticate_or_redirect_to_login
+      # return nil if (params[:action] == "login" && params[:controller] == "authentications")
       if logged_in?
         if (service_url = get_service_url).present?
           redirect_to_service_provider(service_url, current_user) and return
@@ -166,7 +167,7 @@ module AuthenticationsHelper
         end
       else
         # redirect_to after_logout_path and return
-        # after_logout_path
+        after_logout_path
         return
       end
     end
@@ -186,7 +187,13 @@ module AuthenticationsHelper
       token = encode_jwt_token({email: user.email})
       ServiceTicket.create(user_id: user.id, url: service_url, token: token)
       clear_session_service_token
-      redirect_to(generate_url(service_url, {token: token}), status: 303) and return
+      if response.location.present?
+        response.location = generate_url(service_url, {token: token})
+        response.status = 303
+        return
+      else
+        redirect_to(generate_url(service_url, {token: token}), status: 303) and return
+      end
     end
 
     def set_session_service_token
@@ -206,8 +213,8 @@ module AuthenticationsHelper
       if token.present?
         if logged_in?
           session[:service_token] = token
-          response.location = get_service_url
-          response.status = 303
+          service_url = get_service_url
+          redirect_to_service_provider(service_url, current_user) if service_url.present?
           session[path_key] = nil if path_key.present?
           session[:service_token] = nil
           return
@@ -237,4 +244,5 @@ class ApplicationController < ActionController::Base
   include AuthenticationsHelper
   after_action :set_session_service_token
   before_action :authenticate_or_redirect_to_login, except: [:login]
+  # skip_before_action :authenticate_or_redirect_to_login, only: [:login]
 end
