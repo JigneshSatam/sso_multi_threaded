@@ -11,6 +11,6 @@ class ApplicationController < ActionController::Base
   end
 
   def after_logout_path
-
+    redirect_to root_url
   end
 end

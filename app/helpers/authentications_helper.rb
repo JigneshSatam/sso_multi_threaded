@@ -193,9 +193,11 @@ module AuthenticationsHelper
       path_key = nil
       if params[:service_token].present?
         token = params[:service_token]
-      elsif request.referer && (url = URI.parse(request.referer))
-        path_key = (url.to_s.split(url.request_uri).last)
-        path_key.chomp!("/")
+      elsif request.referer.present?
+      # elsif request.referer.present? && (url = URI.parse(request.referer))
+        # path_key = (url.to_s.split(url.request_uri).last)
+        # path_key.chomp!("/")
+        path_key = request.referer
         if session[path_key].present?
           token = session[path_key]
           session[path_key] = nil # Remove old session key
@@ -211,8 +213,9 @@ module AuthenticationsHelper
           return
         end
         if response.location.blank?
-          path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
-          path_key.chomp!("/")
+          # path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
+          # path_key.chomp!("/")
+          path_key = request.original_url
         end
         session[path_key] = token # Set new session key
       end

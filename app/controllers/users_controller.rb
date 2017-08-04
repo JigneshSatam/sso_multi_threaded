@@ -1,4 +1,5 @@
 class UsersController < ApplicationController
+  skip_before_action :authenticate_or_redirect_to_login, only: [:new]
   def show
     begin
       logger.debug "@@@@@@@@@@ SHOW before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
