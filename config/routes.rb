@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   resources :authentications do
     collection do
       post 'login'
+      get 'logout'
       delete 'logout'
     end
   end
