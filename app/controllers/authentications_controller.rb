@@ -84,11 +84,13 @@ class AuthenticationsController < ApplicationController
   end
 
   def logout
-    # debugger
     logger.debug "#{'$'*10} destroy started #{'$'*10}"
     # sleep(10)
-    log_out if logged_in?
+    log_out(params[:token]) if logged_in?
     logger.debug "#{'$'*10} destroy ended #{'$'*10}"
-    redirect_to root_url
+    respond_to do |format|
+      format.json {render json: nil, status: 200}
+      format.html {redirect_to root_url}
+    end
   end
 end
