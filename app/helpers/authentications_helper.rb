@@ -7,7 +7,7 @@ module AuthenticationsHelper
     def encode_jwt_token(data_hash)
       exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
       payload = { :data => data_hash, :exp => exp }
-      payload = { :data => data_hash }
+      # payload = { :data => data_hash }
       hmac_secret = Rails.configuration.sso_settings["identity_provider_secret_key"]
       JWT.encode payload, hmac_secret, 'HS256'
     end
