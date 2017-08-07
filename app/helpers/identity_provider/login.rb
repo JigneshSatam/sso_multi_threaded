@@ -4,6 +4,12 @@ module IdentityProvider
 
     end
 
+    module Shared
+      def model
+        @model ||= Rails.configuration.sso_settings["model"].camelcase.constantize
+      end
+    end
+
     module InstanceMethods
       def log_in(user)
         session[:user_id] = user.id
@@ -38,7 +44,7 @@ module IdentityProvider
             # puts "@@@@@@@@@@ CURRENT_USER after ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
 
             logger.debug "@@@@@@@@@@ CURRENT_USER before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
-            @current_user ||= User.find_by(id: user_id)
+            @current_user ||= model.find_by(id: user_id)
             logger.debug "@@@@@@@@@@ CURRENT_USER middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
             # sleep(20)
             # ts = Thread.new do
@@ -61,7 +67,7 @@ module IdentityProvider
             retry
           ensure
             logger.debug "@@@@@@@@@@ Thread in CURRENT_USER ENSURE @@@@@@@@@@@@@@@@"
-            User.connection.close
+            model.connection.close
             logger.debug "@@@@@@@@@@ CURRENT_USER ENSURE ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
             # ActiveRecord::Base.connection_pool.release_connection
             # ActiveRecord::Base.connection_pool.checkin(main_thread_conn)
@@ -74,13 +80,13 @@ module IdentityProvider
           end
         elsif(user_id = cookies.signed[:user_id])
           begin
-            user = User.find_by(id: user_id)
+            user = model.find_by(id: user_id)
           rescue Exception => e
             logger.debug "@@@@@@@@@@ Thread is sleeping RESCUE #{e} @@@@@@@@@@@@@@@@"
           ensure
             logger.debug "@@@@@@@@@@ Thread in CURRENT_USER ENSURE @@@@@@@@@@@@@@@@"
             # User.connection_pool.release_connection
-            User.connection.close
+            model.connection.close
             logger.debug "@@@@@@@@@@ CURRENT_USER ENSURE ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
           end
           if user && user.authenticated?(cookies[:remember_token])
@@ -89,7 +95,7 @@ module IdentityProvider
           end
         elsif (jwt_token = params[:token]).present?
           payload = decode_jwt_token(jwt_token)
-          @current_user ||= User.find_by(email: payload["data"]["email"])
+          @current_user ||= model.find_by(email: payload["data"]["email"])
         end
         return @current_user
       end
@@ -164,6 +170,7 @@ module IdentityProvider
     def self.included(receiver)
       receiver.extend         ClassMethods
       receiver.send :include, InstanceMethods
+      receiver.send :include, Shared
     end
   end
 end
