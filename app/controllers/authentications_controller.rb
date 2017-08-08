@@ -1,4 +1,5 @@
 class AuthenticationsController < ApplicationController
+  skip_before_action :authenticate_or_redirect_to_login, only: [:login]
   def login
     user = nil
     begin
@@ -62,16 +63,9 @@ class AuthenticationsController < ApplicationController
     if user && user.authenticate(params[:session][:password])
       log_in(user)
       params[:session][:remember_me] == '1' ? remember(user) : forget(user)
-      if (service_url = get_service_url).present?
-        respond_to do |format|
-         format.html { redirect_to_service_provider(service_url, user) }
-         format.json { nil }
-        end
-      else
-        respond_to do |format|
-         format.html { after_login_path }
-         format.json { render json: "#{user.id}\t\n" }
-        end
+      respond_to do |format|
+       format.html { after_login_path }
+       format.json { render json: "#{user.id}\t\n" }
       end
       # response.headers["Authorization"] = "Bearer #{jwt_token}"
       # request.headers["Authorization"] = "Bearer #{jwt_token}"

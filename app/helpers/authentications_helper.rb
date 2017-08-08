@@ -8,12 +8,12 @@ module AuthenticationsHelper
       exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
       payload = { :data => data_hash, :exp => exp }
       # payload = { :data => data_hash }
-      hmac_secret = Rails.configuration.sso_settings["identity_provider_secret_key"]
+      hmac_secret = sso_secret_key
       JWT.encode payload, hmac_secret, 'HS256'
     end
 
     def decode_jwt_token(token)
-      hmac_secret = Rails.configuration.sso_settings["identity_provider_secret_key"]
+      hmac_secret = sso_secret_key
       begin
         decoded_token = JWT.decode token, hmac_secret, true, { :algorithm => 'HS256' }
         payload = decoded_token.select{|decoded_part| decoded_part.key?("data") }.last
@@ -59,6 +59,5 @@ end
 class ApplicationController < ActionController::Base
   include AuthenticationsHelper
   after_action :set_session_service_token
-  before_action :authenticate_or_redirect_to_login, except: [:login]
-  # skip_before_action :authenticate_or_redirect_to_login, only: [:login]
+  before_action :authenticate_or_redirect_to_login
 end

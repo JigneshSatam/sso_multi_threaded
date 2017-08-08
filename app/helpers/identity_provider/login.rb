@@ -5,8 +5,38 @@ module IdentityProvider
     end
 
     module Shared
+      def print_error(msg, flash_msg = nil)
+        msg = "\e[31m#{msg}\e[0m"
+        msg = "\e[1m#{msg}\e[22m"
+        flash_msg ||= "Follow the below instructions"
+        flash_msg = "\e[36m#{flash_msg}\e[0m"
+        flash_msg = "\e[1m#{flash_msg}\e[22m"
+        flash_msg = "\e[5m#{flash_msg}\e[25m"
+        print "\n"
+        logger.info(flash_msg)
+        logger.info(msg)
+        print "\n"
+      end
+
       def model
-        @model ||= Rails.configuration.sso_settings["model"].camelcase.constantize
+        begin
+          @model ||= Rails.configuration.sso_settings["model"].camelcase.constantize
+        rescue Exception => e
+          print_error("Insert vaid model name in sso_settings.yml file as value for the key 'model' eg: `model: 'user'` if User is the model")
+          raise e
+        end
+      end
+
+      def sso_secret_key
+        return @sso_secret_key if @sso_secret_key
+        begin
+          raise "identity_provider_secret_key missing in sso_settings.yml" if Rails.configuration.sso_settings["identity_provider_secret_key"].blank?
+        rescue Exception => e
+          print_error("Insert key value pair in sso_settings.yml file eg: identity_provider_secret_key: 'my$ecretK3y'")
+          raise e
+        else
+          return (@sso_secret_key = Rails.configuration.sso_settings["identity_provider_secret_key"])
+        end
       end
     end
 
