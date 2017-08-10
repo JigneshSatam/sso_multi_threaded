@@ -27,6 +27,18 @@ module IdentityProvider
         end
       end
 
+      def uniq_identifier
+        return @uniq_identifier if @uniq_identifier
+        begin
+          raise "model_uniq_identifier missing in sso_settings.yml" if Rails.configuration.sso_settings["model_uniq_identifier"].blank?
+        rescue Exception => e
+          print_error("Insert key value pair in sso_settings.yml file eg: `model_uniq_identifier: 'email'` if email is a column")
+          raise e
+        else
+          return (@uniq_identifier = Rails.configuration.sso_settings["model_uniq_identifier"])
+        end
+      end
+
       def sso_secret_key
         return @sso_secret_key if @sso_secret_key
         begin
@@ -41,8 +53,8 @@ module IdentityProvider
     end
 
     module InstanceMethods
-      def log_in(user)
-        session[:user_id] = user.id
+      def log_in(model_instance)
+        session[:model_instance_id] = model_instance.id
       end
 
       # Remembers a user in a persistent session.
@@ -54,7 +66,7 @@ module IdentityProvider
 
       def current_user
         return @current_user if !@current_user.nil?
-        if (user_id = session[:user_id])
+        if (model_instance_id = session[:model_instance_id])
           begin
             # main_thread_conn = ActiveRecord::Base.connection_pool.checkout
             # main_thread_conn.raw_connection
@@ -74,7 +86,7 @@ module IdentityProvider
             # puts "@@@@@@@@@@ CURRENT_USER after ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
 
             logger.debug "@@@@@@@@@@ CURRENT_USER before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
-            @current_user ||= model.find_by(id: user_id)
+            @current_user ||= model.find_by(id: model_instance_id)
             logger.debug "@@@@@@@@@@ CURRENT_USER middle ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
             # sleep(20)
             # ts = Thread.new do
@@ -108,9 +120,9 @@ module IdentityProvider
             # ActiveRecord::Base.clear_active_connections!
             # ActiveRecord::Base.connection.close
           end
-        elsif(user_id = cookies.signed[:user_id])
+        elsif(model_instance_id = cookies.signed[:model_instance_id])
           begin
-            user = model.find_by(id: user_id)
+            user = model.find_by(id: model_instance_id)
           rescue Exception => e
             logger.debug "@@@@@@@@@@ Thread is sleeping RESCUE #{e} @@@@@@@@@@@@@@@@"
           ensure
@@ -125,7 +137,7 @@ module IdentityProvider
           end
         elsif (jwt_token = params[:token]).present?
           payload = decode_jwt_token(jwt_token)
-          @current_user ||= model.find_by(email: payload["data"]["email"])
+          @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
         end
         return @current_user
       end
@@ -183,9 +195,9 @@ module IdentityProvider
         payload.present? ? payload["data"]["service_url"] : nil
       end
 
-      def redirect_to_service_provider(service_url, user)
-        token = encode_jwt_token({email: user.email, session: session.id})
-        ServiceTicket.create(user_id: user.id, url: service_url, token: token)
+      def redirect_to_service_provider(service_url, model_instance)
+        token = encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id})
+        ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
         clear_session_service_token
         if response.location.present?
           response.location = generate_url(service_url, {token: token})

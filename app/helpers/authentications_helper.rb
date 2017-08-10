@@ -21,7 +21,13 @@ module AuthenticationsHelper
       rescue JWT::ExpiredSignature
         # Handle expired token, e.g. logout user or deny access
         puts "Token expired thus redirecting to root_url"
-        redirect_to root_url and return
+        if response.location.blank?
+          redirect_to root_url and return
+        else
+          response.location = root_url
+          response.status = 301
+          return
+        end
       end
     end
 

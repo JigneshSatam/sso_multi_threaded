@@ -16,14 +16,14 @@ ActiveRecord::Schema.define(version: 20170724193847) do
   enable_extension "plpgsql"
 
   create_table "service_tickets", force: :cascade do |t|
-    t.integer "user_id"
+    t.integer "model_instance_id"
     t.string "url"
     t.string "token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "users", force: :cascade do |t|
+  create_table "users", id: :serial, force: :cascade do |t|
     t.string "name"
     t.string "email"
     t.datetime "created_at", null: false

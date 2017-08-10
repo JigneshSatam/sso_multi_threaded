@@ -16,7 +16,7 @@ module IdentityProvider
       def log_out_from_identity_provider
         forget(current_user)
         logout_service_providers(current_user.id)
-        session.delete(:user_id)
+        session.delete(:model_instance_id)
         @current_user = nil
       end
 
@@ -28,7 +28,7 @@ module IdentityProvider
         number_of_keys_removed = store.with{|redis| redis.del(session_id)}
         logger.debug "logging_out number_of_keys_removed ====> #{number_of_keys_removed} <===="
         # ServiceTicket.where(token: jwt_token).joins("INNER JOIN service_tickets as st ON  st.user_id=service_tickets.user_id").where("token NOT ILIKE ?", jwt_token)
-        ServiceTicket.joins("INNER JOIN service_tickets as st ON st.user_id=service_tickets.user_id").where("st.token ILIKE ?", jwt_token).each do |service_ticket|
+        ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", jwt_token).each do |service_ticket|
           if service_ticket.token != jwt_token
             make_logout_request(service_ticket.url, service_ticket.token)
             # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
@@ -38,8 +38,8 @@ module IdentityProvider
         # ServiceTicket.joins("INNER JOIN service_tickets ON users.id = service_tickets.user_id").where(email: email)
       end
 
-      def logout_service_providers(user_id)
-        ServiceTicket.where(user_id: user_id).each do |service_ticket|
+      def logout_service_providers(model_instance_id)
+        ServiceTicket.where(model_instance_id: model_instance_id).each do |service_ticket|
           make_logout_request(service_ticket.url, service_ticket.token)
           # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
           service_ticket.destroy
