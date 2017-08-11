@@ -28,22 +28,23 @@ module IdentityProvider
         number_of_keys_removed = store.with{|redis| redis.del(session_id)}
         logger.debug "logging_out number_of_keys_removed ====> #{number_of_keys_removed} <===="
         # ServiceTicket.where(token: jwt_token).joins("INNER JOIN service_tickets as st ON  st.user_id=service_tickets.user_id").where("token NOT ILIKE ?", jwt_token)
-        ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", jwt_token).each do |service_ticket|
-          if service_ticket.token != jwt_token
-            make_logout_request(service_ticket.url, service_ticket.token)
-            # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
-          end
-          service_ticket.destroy
-        end
+        service_tickets_url_token_arrays = ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", jwt_token).destroy_all.pluck(:url, :token)
+        make_threaded_logout_request(service_tickets_url_token_arrays)
         # ServiceTicket.joins("INNER JOIN service_tickets ON users.id = service_tickets.user_id").where(email: email)
       end
 
       def logout_service_providers(model_instance_id)
-        ServiceTicket.where(model_instance_id: model_instance_id).each do |service_ticket|
-          make_logout_request(service_ticket.url, service_ticket.token)
-          # make_logout_request(service_ticket.token, service_ticket.url + "/logout")
-          service_ticket.destroy
+        service_tickets_url_token_arrays = ServiceTicket.where(model_instance_id: model_instance_id).destroy_all.pluck(:url, :token)
+        make_threaded_logout_request(service_tickets_url_token_arrays)
+      end
+
+      def make_threaded_logout_request(url_token_arrays)
+        threads = []
+        url_token_arrays.each do |url_token_array_tuple|
+          threads << Thread.new { make_logout_request(url_token_array_tuple[0], url_token_array_tuple[1]) }
         end
+        # threads.each { |thread| thread.join }
+        threads.each { |thread| thread.join(0.5) }
       end
 
       def make_logout_request(url_string, token)
