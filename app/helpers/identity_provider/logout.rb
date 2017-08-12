@@ -13,6 +13,12 @@ module IdentityProvider
         end
       end
 
+      def forget(user)
+        # user.forget
+        # cookies.delete(:user_id)
+        cookies.delete(:remember_token)
+      end
+
       def log_out_from_identity_provider
         forget(current_user)
         logout_service_providers(current_user.id)

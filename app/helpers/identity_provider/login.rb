@@ -58,10 +58,12 @@ module IdentityProvider
       end
 
       # Remembers a user in a persistent session.
-      def remember(user)
-        user.remember
-        cookies.permanent.signed[:user_id] = user.id
-        cookies.permanent[:remember_token] = user.remember_token
+      def remember(model_instance)
+        # user.remember
+        # cookies.permanent.signed[:user_id] = user.id
+        # cookies.permanent[:remember_token] = user.remember_token
+        encoded_model_instance_id = encode_jwt_token({model_instance_id: model_instance.id})
+        cookies.permanent.signed[:remember_token] = encoded_model_instance_id
       end
 
       def current_user
@@ -120,9 +122,11 @@ module IdentityProvider
             # ActiveRecord::Base.clear_active_connections!
             # ActiveRecord::Base.connection.close
           end
-        elsif(model_instance_id = cookies.signed[:model_instance_id])
+        elsif(remember_token = cookies.signed[:remember_token])
           begin
-            user = model.find_by(id: model_instance_id)
+            payload = decode_jwt_token(remember_token)
+            model_instance_id = payload["data"]["model_instance_id"]
+            @current_user ||= model.find_by(id: model_instance_id)
           rescue Exception => e
             logger.debug "@@@@@@@@@@ Thread is sleeping RESCUE #{e} @@@@@@@@@@@@@@@@"
           ensure
@@ -131,21 +135,15 @@ module IdentityProvider
             model.connection.close
             logger.debug "@@@@@@@@@@ CURRENT_USER ENSURE ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
           end
-          if user && user.authenticated?(cookies[:remember_token])
-            log_in user
-            @current_user = user
-          end
+          # if user && user.authenticated?(cookies[:remember_token])
+          #   log_in user
+          #   @current_user = user
+          # end
         elsif (jwt_token = params[:token]).present?
           payload = decode_jwt_token(jwt_token)
           @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
         end
         return @current_user
-      end
-
-      def forget(user)
-        user.forget
-        cookies.delete(:user_id)
-        cookies.delete(:remember_token)
       end
 
       def logged_in?
@@ -196,7 +194,7 @@ module IdentityProvider
       end
 
       def redirect_to_service_provider(service_url, model_instance)
-        token = encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id})
+        token = encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
         ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
         clear_session_service_token
         if response.location.present?

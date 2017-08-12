@@ -4,10 +4,14 @@ module AuthenticationsHelper
   end
 
   module InstanceMethods
-    def encode_jwt_token(data_hash)
-      exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
-      payload = { :data => data_hash, :exp => exp }
-      # payload = { :data => data_hash }
+    def encode_jwt_token(data_hash, expire_after = nil)
+      payload = { :data => data_hash }
+      if expire_after.present?
+        exp = Time.now.to_i + expire_after.to_i.minutes.to_i
+        payload.merge!({exp: exp})
+        # exp = Time.now.to_i + ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour }.to_i
+        # payload = { :data => data_hash, :exp => exp }
+      end
       hmac_secret = sso_secret_key
       JWT.encode payload, hmac_secret, 'HS256'
     end
