@@ -62,7 +62,7 @@ class AuthenticationsController < ApplicationController
     # debugger
     if user && user.authenticate(params[:session][:password])
       log_in(user)
-      params[:session][:remember_me] == '1' ? remember(user) : forget(user)
+      params[:session][:remember_me] == '1' ? remember(user) : forget
       respond_to do |format|
        format.html { after_login_path }
        format.json { render json: "#{user.id}\t\n" }

@@ -2,10 +2,12 @@ default: &default
   model: "user"
   model_uniq_identifier: "email"
   create_record_on_the_fly: "true"
+  sso_session_timeout: "60"
 
 development:
   <<: *default
   identity_provider_secret_key: 'my$ecretK3y'
+  sso_session_timeout: "1"
 
 test:
   <<: *default

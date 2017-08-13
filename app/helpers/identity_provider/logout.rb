@@ -13,15 +13,14 @@ module IdentityProvider
         end
       end
 
-      def forget(user)
-        # user.forget
-        # cookies.delete(:user_id)
+      def forget
         cookies.delete(:remember_token)
       end
 
-      def log_out_from_identity_provider
-        forget(current_user)
-        logout_service_providers(current_user.id)
+      def log_out_from_identity_provider(model_instance_id = nil)
+        model_instance_id ||= current_user.id if current_user
+        forget
+        logout_service_providers(model_instance_id) if model_instance_id.present
         session.delete(:model_instance_id)
         @current_user = nil
       end

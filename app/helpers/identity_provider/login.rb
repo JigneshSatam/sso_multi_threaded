@@ -50,23 +50,46 @@ module IdentityProvider
           return (@sso_secret_key = Rails.configuration.sso_settings["identity_provider_secret_key"])
         end
       end
+
+      def session_timeout
+        return @session_timeout if @session_timeout
+        if (@session_timeout = Rails.configuration.sso_settings["sso_session_timeout"]).present?
+          return (@session_timeout = @session_timeout.to_i.minutes)
+        else
+          session[:expire_at] = nil if session[:expire_at].present?
+          print_error("Insert key value pair in sso_settings.yml file eg: `sso_session_timeout: '10'` 10 are in minutes", "You have not set session_timeout")
+        end
+      end
     end
 
     module InstanceMethods
       def log_in(model_instance)
         session[:model_instance_id] = model_instance.id
+        set_session_expire_at
+      end
+
+      def set_session_expire_at
+        if session_timeout.present?
+          session[:expire_at] = (Time.now + session_timeout)
+        end
+      end
+
+      def session_expired?
+        return session[:expire_at].present? && Time.now > session[:expire_at]
       end
 
       # Remembers a user in a persistent session.
       def remember(model_instance)
-        # user.remember
-        # cookies.permanent.signed[:user_id] = user.id
-        # cookies.permanent[:remember_token] = user.remember_token
         encoded_model_instance_id = encode_jwt_token({model_instance_id: model_instance.id})
         cookies.permanent.signed[:remember_token] = encoded_model_instance_id
       end
 
       def current_user
+        if session_expired?
+          previous_model_instance_id = session[:model_instance_id]
+          session.delete(:model_instance_id)
+          @current_user = nil
+        end
         return @current_user if !@current_user.nil?
         if (model_instance_id = session[:model_instance_id])
           begin
@@ -142,6 +165,11 @@ module IdentityProvider
         elsif (jwt_token = params[:token]).present?
           payload = decode_jwt_token(jwt_token)
           @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
+        end
+        if @current_user.present?
+          set_session_expire_at
+        else
+          logout_service_providers(previous_model_instance_id) if previous_model_instance_id
         end
         return @current_user
       end
