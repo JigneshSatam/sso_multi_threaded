@@ -53,8 +53,8 @@ module IdentityProvider
 
       def session_timeout
         return @session_timeout if @session_timeout
-        if (@session_timeout = Rails.configuration.sso_settings["sso_session_timeout"]).present?
-          return (@session_timeout = @session_timeout.to_i.minutes)
+        if Rails.configuration.sso_settings["sso_session_timeout"].to_i > 0
+          return (@session_timeout = Rails.configuration.sso_settings["sso_session_timeout"].to_i.minutes)
         else
           session[:expire_at] = nil if session[:expire_at].present?
           print_error("Insert key value pair in sso_settings.yml file eg: `sso_session_timeout: '10'` 10 are in minutes", "You have not set session_timeout")
