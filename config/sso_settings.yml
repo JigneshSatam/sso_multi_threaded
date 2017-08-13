@@ -3,6 +3,7 @@ default: &default
   model_uniq_identifier: "email"
   create_record_on_the_fly: "true"
   sso_session_timeout: "60"
+  identity_provider_secret_key: 'my$ecretK3y'
 
 development:
   <<: *default
