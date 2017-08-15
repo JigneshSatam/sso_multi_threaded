@@ -20,13 +20,13 @@ module IdentityProvider
       def log_out_from_identity_provider(model_instance_id = nil)
         model_instance_id ||= current_user.id if current_user
         forget
-        logout_service_providers(model_instance_id) if model_instance_id.present
+        logout_service_providers(model_instance_id) if model_instance_id.present?
         session.delete(:model_instance_id)
         @current_user = nil
       end
 
       def log_out_from_service_provider(jwt_token)
-        payload = decode_jwt_token(jwt_token)
+        payload = Authentication.decode_jwt_token(jwt_token)
         session_id = payload["data"]["session"]
         logger.debug "authentication_helper %% clear_session ====> started <===="
         store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)

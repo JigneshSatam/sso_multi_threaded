@@ -3,65 +3,6 @@ module IdentityProvider
     module ClassMethods
 
     end
-
-    module Shared
-      def print_error(msg, flash_msg = nil)
-        msg = "\e[31m#{msg}\e[0m"
-        msg = "\e[1m#{msg}\e[22m"
-        flash_msg ||= "Follow the below instructions"
-        flash_msg = "\e[36m#{flash_msg}\e[0m"
-        flash_msg = "\e[1m#{flash_msg}\e[22m"
-        flash_msg = "\e[5m#{flash_msg}\e[25m"
-        print "\n"
-        logger.info(flash_msg)
-        logger.info(msg)
-        print "\n"
-      end
-
-      def model
-        begin
-          @model ||= Rails.configuration.sso_settings["model"].camelcase.constantize
-        rescue Exception => e
-          print_error("Insert vaid model name in sso_settings.yml file as value for the key 'model' eg: `model: 'user'` if User is the model")
-          raise e
-        end
-      end
-
-      def uniq_identifier
-        return @uniq_identifier if @uniq_identifier
-        begin
-          raise "model_uniq_identifier missing in sso_settings.yml" if Rails.configuration.sso_settings["model_uniq_identifier"].blank?
-        rescue Exception => e
-          print_error("Insert key value pair in sso_settings.yml file eg: `model_uniq_identifier: 'email'` if email is a column")
-          raise e
-        else
-          return (@uniq_identifier = Rails.configuration.sso_settings["model_uniq_identifier"])
-        end
-      end
-
-      def sso_secret_key
-        return @sso_secret_key if @sso_secret_key
-        begin
-          raise "identity_provider_secret_key missing in sso_settings.yml" if Rails.configuration.sso_settings["identity_provider_secret_key"].blank?
-        rescue Exception => e
-          print_error("Insert key value pair in sso_settings.yml file eg: identity_provider_secret_key: 'my$ecretK3y'")
-          raise e
-        else
-          return (@sso_secret_key = Rails.configuration.sso_settings["identity_provider_secret_key"])
-        end
-      end
-
-      def session_timeout
-        return @session_timeout if @session_timeout
-        if Rails.configuration.sso_settings["sso_session_timeout"].to_i > 0
-          return (@session_timeout = Rails.configuration.sso_settings["sso_session_timeout"].to_i.minutes)
-        else
-          session[:expire_at] = nil if session[:expire_at].present?
-          print_error("Insert key value pair in sso_settings.yml file eg: `sso_session_timeout: '10'` 10 are in minutes", "You have not set session_timeout")
-        end
-      end
-    end
-
     module InstanceMethods
       def log_in(model_instance)
         session[:model_instance_id] = model_instance.id
@@ -80,7 +21,7 @@ module IdentityProvider
 
       # Remembers a user in a persistent session.
       def remember(model_instance)
-        encoded_model_instance_id = encode_jwt_token({model_instance_id: model_instance.id})
+        encoded_model_instance_id = Authentication.encode_jwt_token({model_instance_id: model_instance.id})
         cookies.permanent.signed[:remember_token] = encoded_model_instance_id
       end
 
@@ -147,7 +88,7 @@ module IdentityProvider
           end
         elsif(remember_token = cookies.signed[:remember_token])
           begin
-            payload = decode_jwt_token(remember_token)
+            payload = Authentication.decode_jwt_token(remember_token)
             model_instance_id = payload["data"]["model_instance_id"]
             @current_user ||= model.find_by(id: model_instance_id)
           rescue Exception => e
@@ -163,7 +104,7 @@ module IdentityProvider
           #   @current_user = user
           # end
         elsif (jwt_token = params[:token]).present?
-          payload = decode_jwt_token(jwt_token)
+          payload = Authentication.decode_jwt_token(jwt_token)
           @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
         end
         if @current_user.present?
@@ -217,12 +158,12 @@ module IdentityProvider
       def get_service_url
         service_token = get_service_token
         return nil if service_token.blank?
-        payload = decode_jwt_token(service_token)
+        payload = Authentication.decode_jwt_token(service_token)
         payload.present? ? payload["data"]["service_url"] : nil
       end
 
       def redirect_to_service_provider(service_url, model_instance)
-        token = encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+        token = Authentication.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
         ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
         clear_session_service_token
         if response.location.present?
@@ -238,7 +179,7 @@ module IdentityProvider
     def self.included(receiver)
       receiver.extend         ClassMethods
       receiver.send :include, InstanceMethods
-      receiver.send :include, Shared
+      receiver.send :include, Authentication
     end
   end
 end
