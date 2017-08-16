@@ -26,7 +26,7 @@ module IdentityProvider
       end
 
       def log_out_from_service_provider(jwt_token)
-        payload = Authentication.decode_jwt_token(jwt_token)
+        payload = Token.decode_jwt_token(jwt_token)
         session_id = payload["data"]["session"]
         logger.debug "authentication_helper %% clear_session ====> started <===="
         store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)
@@ -65,10 +65,6 @@ module IdentityProvider
         #   http.request(req)
         # }
         puts res.body
-      end
-
-      def clear_session_service_token
-        session[:service_token] = nil
       end
     end
 

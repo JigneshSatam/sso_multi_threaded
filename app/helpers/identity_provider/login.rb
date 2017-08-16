@@ -21,7 +21,7 @@ module IdentityProvider
 
       # Remembers a user in a persistent session.
       def remember(model_instance)
-        encoded_model_instance_id = Authentication.encode_jwt_token({model_instance_id: model_instance.id})
+        encoded_model_instance_id = Token.encode_jwt_token({model_instance_id: model_instance.id})
         cookies.permanent.signed[:remember_token] = encoded_model_instance_id
       end
 
@@ -88,7 +88,7 @@ module IdentityProvider
           end
         elsif(remember_token = cookies.signed[:remember_token])
           begin
-            payload = Authentication.decode_jwt_token(remember_token)
+            payload = Token.decode_jwt_token(remember_token)
             model_instance_id = payload["data"]["model_instance_id"]
             @current_user ||= model.find_by(id: model_instance_id)
           rescue Exception => e
@@ -104,7 +104,7 @@ module IdentityProvider
           #   @current_user = user
           # end
         elsif (jwt_token = params[:token]).present?
-          payload = Authentication.decode_jwt_token(jwt_token)
+          payload = Token.decode_jwt_token(jwt_token)
           @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
         end
         if @current_user.present?
@@ -120,58 +120,75 @@ module IdentityProvider
       end
 
       def set_session_service_token
-        path_key = nil
-        if params[:service_token].present?
-          token = params[:service_token]
-        elsif request.referer.present?
-        # elsif request.referer.present? && (url = URI.parse(request.referer))
-          # path_key = (url.to_s.split(url.request_uri).last)
-          # path_key.chomp!("/")
-          path_key = request.referer
-          if session[path_key].present?
-            token = session[path_key]
-            session[path_key] = nil # Remove old session key
-          end
-        end
-        if token.present?
+        if (service_url = get_service_url).present?
           if logged_in?
-            session[:service_token] = token
-            service_url = get_service_url
-            redirect_to_service_provider(service_url, current_user) if service_url.present?
-            session[path_key] = nil if path_key.present?
-            session[:service_token] = nil
-            return
+            redirect_to_service_provider(service_url, current_user)
+          else
+            if response.location.blank?
+              # path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
+              # path_key.chomp!("/")
+              path_key = request.original_url
+            else
+              path_key = request.location
+            end
+            set_service_token_in_token_keeper(path_key, get_service_token) # Set new session key
           end
-          if response.location.blank?
-            # path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
-            # path_key.chomp!("/")
-            path_key = request.original_url
-          end
-          session[path_key] = token # Set new session key
         end
       end
 
       def get_service_token
-        return (params[:service_token] || session[:service_token])
+        return @service_token if @service_token.present?
+        # return (params[:service_token] || session[:service_token])
+        if params[:service_token].present?
+          @service_token = params[:service_token]
+        elsif (referer = request.referer).present? && session[:token_keeper].present? && session[:token_keeper][referer].present?
+        # elsif request.referer.present? && (url = URI.parse(request.referer))
+          # path_key = (url.to_s.split(url.request_uri).last)
+          # path_key.chomp!("/")
+          # path_key = request.referer
+            @service_token = session[:token_keeper][referer]
+          # if
+            # session[path_key] = nil # Remove old session key
+          # end
+        end
+        return @service_token
+      end
+
+      def set_service_token_in_token_keeper(key, token)
+        session[:token_keeper] = {key => token}
+      end
+
+      def generate_url(url, params = {})
+        uri = URI(url)
+        uri.query = params.to_query
+        uri.to_s
       end
 
       def get_service_url
         service_token = get_service_token
         return nil if service_token.blank?
-        payload = Authentication.decode_jwt_token(service_token)
+        payload = Token.decode_jwt_token(service_token)
         payload.present? ? payload["data"]["service_url"] : nil
       end
 
       def redirect_to_service_provider(service_url, model_instance)
-        token = Authentication.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+        token = Token.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
         ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
         clear_session_service_token
+        safe_redirection(generate_url(service_url, {token: token}), 303)
+      end
+
+      def clear_session_service_token
+        session[:token_keeper] = nil
+      end
+
+      def safe_redirection(url, status = 302)
         if response.location.present?
-          response.location = generate_url(service_url, {token: token})
-          response.status = 303
+          response.location = url
+          response.status = status
           return
         else
-          redirect_to(generate_url(service_url, {token: token}), status: 303) and return
+          redirect_to(url, status: status) and return
         end
       end
     end

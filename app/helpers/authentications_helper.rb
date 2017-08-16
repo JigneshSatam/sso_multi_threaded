@@ -4,12 +4,6 @@ module AuthenticationsHelper
   end
 
   module InstanceMethods
-    def generate_url(url, params = {})
-      uri = URI(url)
-      uri.query = params.to_query
-      uri.to_s
-    end
-
     def authenticate_or_redirect_to_login
       # return nil if (params[:action] == "login" && params[:controller] == "authentications")
       if logged_in?
@@ -20,6 +14,7 @@ module AuthenticationsHelper
         end
       else
         # redirect_to after_logout_path and return
+        # safe_redirection(after_logout_path)
         after_logout_path
         return
       end
