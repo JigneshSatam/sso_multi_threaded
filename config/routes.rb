@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       delete 'logout'
     end
   end
+  get "/unauthenticated" => "application#unauthenticated"
 
   root "users#new"
 
