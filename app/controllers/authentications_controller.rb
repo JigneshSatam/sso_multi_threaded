@@ -1,5 +1,5 @@
 class AuthenticationsController < ApplicationController
-  skip_before_action :authenticate_or_redirect_to_login, only: [:login]
+  skip_before_action :check_authentication, only: [:login]
   def login
     user = nil
     begin

@@ -4,19 +4,11 @@ module AuthenticationsHelper
   end
 
   module InstanceMethods
-    def authenticate_or_redirect_to_login
-      # return nil if (params[:action] == "login" && params[:controller] == "authentications")
-      if logged_in?
-        if (service_url = get_service_url).present?
-          redirect_to_service_provider(service_url, current_user) and return
-        else
-          return nil
-        end
-      else
-        # redirect_to after_logout_path and return
-        # safe_redirection(after_logout_path)
-        after_logout_path
-        return
+    def check_authentication
+      unless logged_in?
+        ErrorPrinter.print_error("Sorry, you need to login before continuing.", "Login required.")
+        flash[:alert] = "Sorry, you need to login before continuing."
+        return redirect_to unauthenticated_path, status: 302
       end
     end
   end
@@ -32,6 +24,7 @@ end
 
 class ApplicationController < ActionController::Base
   include AuthenticationsHelper
+  before_action :check_authentication
+  skip_before_action :check_authentication, only: [:unauthenticated]
   after_action :set_session_service_token
-  before_action :authenticate_or_redirect_to_login
 end
