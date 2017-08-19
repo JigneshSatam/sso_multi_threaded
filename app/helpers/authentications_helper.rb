@@ -26,5 +26,6 @@ class ApplicationController < ActionController::Base
   include AuthenticationsHelper
   before_action :check_authentication
   skip_before_action :check_authentication, only: [:unauthenticated]
-  after_action :set_session_service_token
+  after_action :redirect_to_service_provider, if: :logged_in_user_has_service_token
+  after_action :set_session_service_token, if: :has_service_token?
 end

@@ -120,19 +120,13 @@ module IdentityProvider
       end
 
       def set_session_service_token
-        if (service_url = get_service_url).present?
-          if logged_in?
-            redirect_to_service_provider(service_url, current_user)
+        if has_service_token?
+          if response.location.blank?
+            path_key = request.original_url
           else
-            if response.location.blank?
-              # path_key = request.query_string.present? ? request.original_url.split("?" + request.query_string).last : request.original_url
-              # path_key.chomp!("/")
-              path_key = request.original_url
-            else
-              path_key = request.location
-            end
-            set_service_token_in_token_keeper(path_key, get_service_token) # Set new session key
+            path_key = response.location
           end
+          set_service_token_in_token_keeper(path_key, get_service_token) # Set new session key
         end
       end
 
@@ -154,6 +148,10 @@ module IdentityProvider
         return @service_token
       end
 
+      def has_service_token?
+        return get_service_token.present?
+      end
+
       def set_service_token_in_token_keeper(key, token)
         session[:token_keeper] = {key => token}
       end
@@ -171,7 +169,7 @@ module IdentityProvider
         payload.present? ? payload["data"]["service_url"] : nil
       end
 
-      def redirect_to_service_provider(service_url, model_instance)
+      def redirect_to_service_provider_and_set_service_ticket(service_url, model_instance)
         token = Token.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
         ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
         clear_session_service_token
@@ -190,6 +188,15 @@ module IdentityProvider
         else
           redirect_to(url, status: status) and return
         end
+      end
+
+      def redirect_to_service_provider
+        ErrorPrinter.print_error("Redirecting to service provider.", "This request came from service provider.")
+        return redirect_to_service_provider_and_set_service_ticket(get_service_url, current_user) if logged_in?
+      end
+
+      def logged_in_user_has_service_token
+        return logged_in? && has_service_token?
       end
     end
 
