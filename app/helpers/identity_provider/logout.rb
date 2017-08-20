@@ -20,13 +20,13 @@ module IdentityProvider
       def log_out_from_identity_provider(model_instance_id = nil)
         model_instance_id ||= current_user.id if current_user
         forget
-        logout_service_providers(model_instance_id) if model_instance_id.present
+        logout_service_providers(model_instance_id) if model_instance_id.present?
         session.delete(:model_instance_id)
         @current_user = nil
       end
 
       def log_out_from_service_provider(jwt_token)
-        payload = decode_jwt_token(jwt_token)
+        payload = Token.decode_jwt_token(jwt_token)
         session_id = payload["data"]["session"]
         logger.debug "authentication_helper %% clear_session ====> started <===="
         store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)
@@ -46,7 +46,8 @@ module IdentityProvider
       def make_threaded_logout_request(url_token_arrays)
         threads = []
         url_token_arrays.each do |url_token_array_tuple|
-          threads << Thread.new { make_logout_request(url_token_array_tuple[0], url_token_array_tuple[1]) }
+          token = Token.encode_jwt_token({session: url_token_array_tuple[1], uniq_identifier: current_user.send(uniq_identifier.to_sym)}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+          threads << Thread.new { make_logout_request(url_token_array_tuple[0], token) }
         end
         # threads.each { |thread| thread.join }
         threads.each { |thread| thread.join(0.5) }
@@ -65,10 +66,6 @@ module IdentityProvider
         #   http.request(req)
         # }
         puts res.body
-      end
-
-      def clear_session_service_token
-        session[:service_token] = nil
       end
     end
 

@@ -2,12 +2,22 @@
 <div class="row">
   <aside class="col-md-4">
     <section class="user_info">
-      <h1>
+      <b style="font-size: 20px; margin-right: 10px;">
         <%= @user.name %>
-      </h1>
+      </b>
+      <% if logged_in? %>
+        <%= link_to "Log out", logout_authentications_path, method: :delete %>
+      <% end %>
     </section>
-    <% if logged_in? %>
-      <%= link_to "Log out", logout_authentications_path, method: :delete %>
+    <br>
+    Go to
+    <br>
+    <% if Rails.env == "development"%>
+      <%= link_to "Client", "http://localhost:5000/", target: "_blank" %>
+    <% else %>
+      <%= link_to "SSO-alpha", "https://sso-client-alpha.herokuapp.com", target: "_blank" %>
+      <br>
+      <%= link_to "SSO-beta", "https://sso-client-beta.herokuapp.com", target: "_blank" %>
     <% end %>
   </aside>
 </div>

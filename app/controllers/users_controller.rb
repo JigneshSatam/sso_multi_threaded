@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  skip_before_action :authenticate_or_redirect_to_login, only: [:new]
+  skip_before_action :check_authentication, only: [:new, :create]
   def show
     begin
       logger.debug "@@@@@@@@@@ SHOW before ==> #{ActiveRecord::Base.connection_pool.stat} @@@@@@@@@@@@@@@@"
@@ -76,16 +76,5 @@ class UsersController < ApplicationController
 
     def user_params
       params.require(:user).permit(:name, :email, :password, :password_confirmation)
-    end
-
-    def check_login
-      if logged_in?
-        if params[:app].present?
-          app_url =  params[:app]
-          redirect_to generate_url(app_url, {token: jwt_token(current_user)}), status: 303 and return
-        else
-          redirect_to current_user and return
-        end
-      end
     end
 end

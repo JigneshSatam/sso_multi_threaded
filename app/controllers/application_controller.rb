@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
     redirect_to current_user
   end
 
-  def after_logout_path
+  def unauthenticated
     redirect_to root_url
   end
 end
