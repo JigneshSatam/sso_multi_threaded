@@ -105,7 +105,7 @@ module IdentityProvider
           # end
         elsif (jwt_token = params[:token]).present?
           payload = Token.decode_jwt_token(jwt_token)
-          @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["email"])
+          @current_user ||= model.find_by(uniq_identifier.to_sym => payload["data"]["uniq_identifier"])
         end
         if @current_user.present?
           set_session_expire_at
@@ -170,9 +170,8 @@ module IdentityProvider
       end
 
       def redirect_to_service_provider_and_set_service_ticket(service_url, model_instance)
-        # token = Token.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
-        token = Token.encode_jwt_token({email: model_instance.send(uniq_identifier.to_sym), session: session.id})
-        ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: token)
+        token = Token.encode_jwt_token({uniq_identifier: model_instance.send(uniq_identifier.to_sym), session: session.id}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+        ServiceTicket.create(model_instance_id: model_instance.id, url: service_url, token: session.id)
         clear_session_service_token
         safe_redirection(generate_url(service_url, {token: token}), 303)
       end
