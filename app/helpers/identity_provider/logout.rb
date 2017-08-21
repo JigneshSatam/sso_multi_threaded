@@ -46,7 +46,7 @@ module IdentityProvider
       def make_threaded_logout_request(url_token_arrays)
         threads = []
         url_token_arrays.each do |url_token_array_tuple|
-          token = Token.encode_jwt_token({session: url_token_array_tuple[1], uniq_identifier: current_user.send(uniq_identifier.to_sym)}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+          token = Token.encode_jwt_token({session: url_token_array_tuple[1]}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
           threads << Thread.new { make_logout_request(url_token_array_tuple[0], token) }
         end
         # threads.each { |thread| thread.join }
