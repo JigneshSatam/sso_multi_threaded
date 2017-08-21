@@ -33,7 +33,7 @@ module IdentityProvider
         number_of_keys_removed = store.with{|redis| redis.del(session_id)}
         logger.debug "logging_out number_of_keys_removed ====> #{number_of_keys_removed} <===="
         # ServiceTicket.where(token: jwt_token).joins("INNER JOIN service_tickets as st ON  st.user_id=service_tickets.user_id").where("token NOT ILIKE ?", jwt_token)
-        service_tickets_url_token_arrays = ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", jwt_token).destroy_all.pluck(:url, :token)
+        service_tickets_url_token_arrays = ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", session_id).destroy_all.pluck(:url, :token)
         make_threaded_logout_request(service_tickets_url_token_arrays)
         # ServiceTicket.joins("INNER JOIN service_tickets ON users.id = service_tickets.user_id").where(email: email)
       end
@@ -46,7 +46,7 @@ module IdentityProvider
       def make_threaded_logout_request(url_token_arrays)
         threads = []
         url_token_arrays.each do |url_token_array_tuple|
-          token = Token.encode_jwt_token({session: url_token_array_tuple[1], uniq_identifier: current_user.send(uniq_identifier.to_sym)}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
+          token = Token.encode_jwt_token({session: url_token_array_tuple[1]}, ENV.fetch("EXPIRE_AFTER_SECONDS") { 1.hour })
           threads << Thread.new { make_logout_request(url_token_array_tuple[0], token) }
         end
         # threads.each { |thread| thread.join }
