@@ -1,5 +1,5 @@
 class AuthenticationsController < ApplicationController
-  skip_before_action :check_authentication, only: [:login]
+  skip_before_action :check_authentication, only: [:login, :keep_alive]
   def login
     user = nil
     begin
@@ -81,6 +81,30 @@ class AuthenticationsController < ApplicationController
     logger.debug "#{'$'*10} destroy started #{'$'*10}"
     # sleep(10)
     log_out(params[:token]) if logged_in?
+    logger.debug "#{'$'*10} destroy ended #{'$'*10}"
+    respond_to do |format|
+      format.json {render json: nil, status: 200}
+      format.html {redirect_to root_url}
+    end
+  end
+
+  def keep_alive
+    current_user = nil
+    if (jwt_token = params[:token]).present?
+      payload = Token.decode_jwt_token(jwt_token)
+      sso_session_id = payload["data"]["session"]
+      if sso_session_id.present?
+        store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)
+        redis_client = store.with{|redis| redis }
+        (session_hash = redis_client.get(sso_session_id)).present? &&
+          (session_hash["expire_at"] = (Time.now + session_timeout)) &&
+            redis_client.set(sso_session_id, session_hash)
+      end
+    end
+
+    logger.debug "#{'$'*10} destroy started #{'$'*10}"
+    # sleep(10)
+    logger.debug session_hash["expire_at"]
     logger.debug "#{'$'*10} destroy ended #{'$'*10}"
     respond_to do |format|
       format.json {render json: nil, status: 200}
