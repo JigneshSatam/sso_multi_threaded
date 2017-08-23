@@ -89,7 +89,6 @@ class AuthenticationsController < ApplicationController
   end
 
   def keep_alive
-    current_user = nil
     if (jwt_token = params[:token]).present?
       payload = Token.decode_jwt_token(jwt_token)
       sso_session_id = payload["data"]["session"]
@@ -101,13 +100,11 @@ class AuthenticationsController < ApplicationController
             redis_client.set(sso_session_id, session_hash)
       end
     end
-
     logger.debug "#{'$'*10} destroy started #{'$'*10}"
-    # sleep(10)
-    logger.debug session_hash["expire_at"]
+    logger.debug session_hash["expire_at"] rescue nil
     logger.debug "#{'$'*10} destroy ended #{'$'*10}"
     respond_to do |format|
-      format.json {render json: nil, status: 200}
+      format.json {render json: (session_hash["expire_at"] rescue nil), status: 200}
       format.html {redirect_to root_url}
     end
   end
