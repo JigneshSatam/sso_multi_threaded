@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     collection do
       post 'login'
       get 'logout'
+      get 'keep_alive'
       delete 'logout'
     end
   end
