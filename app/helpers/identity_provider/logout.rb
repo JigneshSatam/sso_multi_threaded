@@ -21,17 +21,14 @@ module IdentityProvider
         model_instance_id ||= current_user.id if current_user
         forget
         logout_service_providers(model_instance_id) if model_instance_id.present?
-        session.delete(:model_instance_id)
+        clear_session(session.id)
         @current_user = nil
       end
 
       def log_out_from_service_provider(jwt_token)
         payload = Token.decode_jwt_token(jwt_token)
         session_id = payload["data"]["session"]
-        logger.debug "authentication_helper %% clear_session ====> started <===="
-        store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)
-        number_of_keys_removed = store.with{|redis| redis.del(session_id)}
-        logger.debug "logging_out number_of_keys_removed ====> #{number_of_keys_removed} <===="
+        clear_session(session_id)
         # ServiceTicket.where(token: jwt_token).joins("INNER JOIN service_tickets as st ON  st.user_id=service_tickets.user_id").where("token NOT ILIKE ?", jwt_token)
         service_tickets_url_token_arrays = ServiceTicket.joins("INNER JOIN service_tickets as st ON st.model_instance_id=service_tickets.model_instance_id").where("st.token ILIKE ?", session_id).destroy_all.pluck(:url, :token)
         make_threaded_logout_request(service_tickets_url_token_arrays)
@@ -41,6 +38,16 @@ module IdentityProvider
       def logout_service_providers(model_instance_id)
         service_tickets_url_token_arrays = ServiceTicket.where(model_instance_id: model_instance_id).destroy_all.pluck(:url, :token)
         make_threaded_logout_request(service_tickets_url_token_arrays)
+      end
+
+      def clear_session(session_id)
+        # session.clear
+        session.delete(:model_instance_id)
+        session.delete(:expire_at)
+        logger.debug "authentication_helper %% clear_session ====> started <===="
+        store = ActionDispatch::Session::RedisStore.new(Rails.application, Rails.application.config.session_options)
+        number_of_keys_removed = store.with{|redis| redis.del(session_id)}
+        logger.debug "logging_out number_of_keys_removed ====> #{number_of_keys_removed} <===="
       end
 
       def make_threaded_logout_request(url_token_arrays)

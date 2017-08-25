@@ -111,6 +111,7 @@ module IdentityProvider
           set_session_expire_at
         else
           logout_service_providers(previous_model_instance_id) if previous_model_instance_id
+          clear_session(session.id)
         end
         return @current_user
       end
