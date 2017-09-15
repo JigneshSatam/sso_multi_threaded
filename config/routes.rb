@@ -2,8 +2,6 @@ Rails.application.routes.draw do
   resources :authentications do
     collection do
       post 'login'
-      get 'logout'
-      get 'keep_alive'
       delete 'logout'
     end
   end

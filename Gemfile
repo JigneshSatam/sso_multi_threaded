@@ -65,3 +65,6 @@ gem 'scout_apm'
 
 # Redis ==> for caching and session store
 gem 'redis-rails'
+
+# gem "simple_sso", path: "../gems/simple_sso"
+gem "simple_sso", git: "https://github.com/JigneshSatam/simple_sso.git"
